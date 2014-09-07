@@ -1,0 +1,64 @@
+#!/bin/bash
+# What we call this application, okay?
+APP_NAME=watchInstall
+
+# Where to store the log of changed files
+LOG_LOCATION="$HOME/Desktop/$APP_NAME.txt"
+
+# make a file, which will have the date and time that file was made
+TIMESTAMP=/tmp/watchInstall_timestamp
+touch $TIMESTAMP; echo;
+echo "$APP_NAME marked the current date and time."; echo;
+
+# Instruct the user to go install something
+echo "Please install something.";
+echo "'$APP_NAME' will log changed files to:";
+echo "    " $LOG_LOCATION;
+echo "The log file will automatically open when done.";
+echo;
+echo "This process may take a long time if searching a large number of";
+echo "files, eg: from / of your drive.";
+echo;
+
+echo "Type [D]ONE when you are finished installing or [C]ANCEL:";
+
+read action # Read in the 'd' or the 'c'
+action=`echo $action | awk '{print tolower($0)}'` # Lowercase the action
+
+case $action in
+	'cancel' | 'c')
+		rm $TIMESTAMP
+		echo "$APP_NAME was cancelled by the user, all files made by $APP_NAME have been cleaned/removed."; echo;
+		;;
+	'done' | 'd')
+		echo "Type in the path that you would like to look for changed files,"
+		echo "for now, ~ does not expand to your home dir,"
+		echo "or hit enter to search from $HOME:"; echo;
+
+		read SEARCH_PATH # Read in the typed in SEARCH_PATH the user entered
+
+		# Check that the passed in path is not empty, if it is, defalt it to your home dir
+		if [ -n "$SEARCH_PATH" ]; then 	# -n tests to see if the argument is non empty
+			echo "Looking for changed files in $SEARCH_PATH ..."; echo;
+		else
+			SEARCH_PATH=$HOME
+			echo "Looking for changed files in $SEARCH_PATH ..."; echo;
+		fi
+
+		# Find, log, and show the log to the user
+		echo "The following files were changed by whatever you just installed" > $LOG_LOCATION
+		echo >> $LOG_LOCATION
+		echo
+
+		sudo find -x $SEARCH_PATH -newer $TIMESTAMP >> $LOG_LOCATION
+
+		echo "Finished search on `date`" >> $LOG_LOCATION
+		echo
+
+		open -e $LOG_LOCATION
+
+		#rm $LOG_LOCATION
+		rm $TIMESTAMP # Clean up, we are all done here
+		;;
+esac
+
